@@ -14,13 +14,13 @@ gem install aws_site_monitor
 ## Usage
 
 ### Add a site to watch list
-`bin/monitor add --url=https://www.google.com --instance-ids=12345 123456`
+`aws_site_monitor add --url=https://www.google.com --instance-ids=12345 123456`
 
 ### Remove a site from watch list
-`bin/monitor remove --url=https://www.google.com`
+`aws_site_monitor remove --url=https://www.google.com`
 
 ### Start watching
-`bin/monitor start --check_every_seconds=30 --aws_region='us-east-1'`
+`aws_site_monitor start --check_every_seconds=30 --aws_region='us-east-1'`
 
 Also make sure you have ENV variables set up for AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 
