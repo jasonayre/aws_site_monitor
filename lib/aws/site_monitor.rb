@@ -32,6 +32,10 @@ module Aws
 
     class Event
       include ::Aws::SiteMonitor::PstoreRecord
+
+      def initialize(occured_at: ::Time.now, status_code:, **attributes)
+        super(occured_at: occured_at, status_code: status_code, **attributes)
+      end
     end
 
     class Site
@@ -98,7 +102,7 @@ module Aws
             timeout_interval: options.check_every_seconds
           ) do
             puts "HITTING MAIN BLOCK"
-            ::Aws::SiteMonitor::Site.all.map do |site|
+            tasks = ::Aws::SiteMonitor::Site.all.map do |site|
               puts "MAKING REQUEST TO #{site[:url]}"
               result = `curl -s -o /dev/null -I -w "%{http_code}" #{site[:url]}`
               puts result.inspect
@@ -107,7 +111,8 @@ module Aws
                 puts "GOT 200 EVERYTHING OK"
                 nil
               else
-                RestartTask.new(site)
+                ::Aws::SiteMonitor::Event.create(:status_code => result)
+                ::Aws::SiteMonitor::RestartTask.new(site)
               end
             end
           end
