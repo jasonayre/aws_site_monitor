@@ -1,8 +1,11 @@
 # Aws::Site::Monitor
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/aws/site/monitor`. To experiment with that code, run `bin/console` for an interactive prompt.
+Monitor/map urls to AWS instance ids, and restart those instances in the event of a non 200 response.
+(i.e. jankpress server on AWS which needs to be restarted intermittently for no apparent reason other than jankpress doing jankpress things)
 
-TODO: Delete this and the text above, and describe your gem
+Intended to be ran as a standalone executable, and has a mini DB to track urls/instance_ids
+
+
 
 ## Installation
 
@@ -18,11 +21,16 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install aws-site-monitor
+    $ gem install aws_site_monitor
 
 ## Usage
 
-TODO: Write usage instructions here
+** Add a site to watch list **
+
+bin/watchlist add --url=https://www.google.com --instance-ids=12345 123456
+bin/watchlist remove --url=https://www.google.com
+
+
 
 ## Development
 

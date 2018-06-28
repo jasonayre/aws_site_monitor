@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    aws-site-monitor (0.1.0)
+    aws_site_monitor (0.1.0)
       activesupport
       aws-sdk
       concurrent-ruby
@@ -634,11 +634,11 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  aws-site-monitor!
+  aws_site_monitor!
   bundler (~> 1.16)
   pry
   rake (~> 10.0)
   rspec (~> 3.0)
 
 BUNDLED WITH
-   1.16.1
+   1.16.2

@@ -1,6 +1,6 @@
 module Aws
   module SiteMonitor
-    class Monitor < ::Thor
+    class CLI < ::Thor
       option :check_every_seconds, :type => :numeric, :default => 5, :desc => 'Check every x seconds'
       option :aws_region, :type => :string, :default => 'us-east-1', :desc => 'AWS region'
 
@@ -8,9 +8,28 @@ module Aws
       def start
         configure!
         start_monitoring!
+        sleep
       rescue => e
         puts e.inspect
         start_monitoring!
+      end
+
+      option :url, :type => :string, :desc => 'URL to watch', :required => true
+      option :instance_ids, :type => :array, :desc => 'AWS Instance IDS to restart when non 200 response is detected', :required => true
+
+      desc "add", "Add a site to the watch list"
+      def add
+        site = ::Aws::SiteMonitor::Site.create(:url => options.url, :instance_ids => options.instance_ids)
+        puts "added #{options[:url]} to watchlist"
+      end
+
+      option :url, :type => :string, :desc => 'URL to remove from watchlist', :required => true
+      desc "remove", "Remove a site from the watch list"
+      def remove
+        site = ::Aws::SiteMonitor::Site.find_by(:url => options.url)
+        raise ::StandardError.new("SiteNotFound #{options.url}") if !site
+        site.destroy
+        puts "removed #{site[:url]} from watchlist"
       end
 
       no_tasks do

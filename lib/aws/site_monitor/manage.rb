@@ -14,7 +14,7 @@ module Aws
       desc "remove", "Remove a site from the watch list"
       def remove
         site = ::Aws::SiteMonitor::Site.find_by(:url => options.url)
-        raise new StandardError("SiteNotFound #{options.url}") if !site
+        raise ::StandardError.new("SiteNotFound #{options.url}") if !site
         site.destroy
         puts "removed #{site[:url]} from watchlist"
       end
