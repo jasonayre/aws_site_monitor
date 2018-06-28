@@ -55,7 +55,6 @@ module Aws
             execution_interval: options.check_every_seconds,
             timeout_interval: options.check_every_seconds
           ) do
-            puts "HITTING MAIN BLOCK"
             tasks = ::Aws::SiteMonitor::Site.all.map do |site|
               puts "MAKING REQUEST TO #{site[:url]}"
               result = `curl -s -o /dev/null -I -w "%{http_code}" #{site[:url]}`
@@ -69,6 +68,8 @@ module Aws
                 ::Aws::SiteMonitor::RestartTask.new(site)
               end
             end
+
+            tasks.flatten.compact.map(&:run)
           end
         end
 

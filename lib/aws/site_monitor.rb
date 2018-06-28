@@ -48,7 +48,7 @@ module Aws
         @site = site
       end
 
-      def restart
+      def run
         ::Aws::SiteMonitor.ec2_client.reboot_instances({
           instance_ids: @site[:instance_ids]
         })
