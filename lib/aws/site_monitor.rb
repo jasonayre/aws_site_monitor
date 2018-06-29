@@ -11,7 +11,6 @@ require 'aws/site_monitor/site'
 require 'aws/site_monitor/event'
 require 'aws/site_monitor/cli'
 
-
 ENV['AWS_REGION'] ||= 'us-east-1'
 
 module Aws

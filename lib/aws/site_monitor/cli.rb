@@ -34,6 +34,24 @@ module Aws
         puts "removed #{site[:url]} from watchlist"
       end
 
+
+      desc "ls", "List sites being monitored"
+      def ls
+        sites = ::Aws::SiteMonitor::Site.all.map(&:attributes).join("\n")
+        puts sites.inspect
+      end
+
+      desc "list_events", "List events"
+      def list_events
+        events = ::Aws::SiteMonitor::Event.all.map(&:attributes).join("\n")
+        puts events.inspect
+      end
+
+      desc "clear_events", "Clear events"
+      def clear_events
+        ::Aws::SiteMonitor::Event.all.map(&:destroy)
+      end
+
       no_tasks do
         def configure!
           configure_traps
