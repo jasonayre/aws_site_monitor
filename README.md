@@ -43,7 +43,7 @@ you can just delete the file.
 Also make sure you have ENV variables set up for AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 
 ## Contributing
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/aws-site-monitor.
+Bug reports and pull requests are welcome on GitHub at https://github.com/jasonayre/aws-site-monitor.
 
 ## License
 
