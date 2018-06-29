@@ -7,7 +7,10 @@ require "active_support/core_ext"
 require 'aws-sdk'
 require 'pstore'
 require 'aws/site_monitor/pstore_record'
+require 'aws/site_monitor/site'
+require 'aws/site_monitor/event'
 require 'aws/site_monitor/cli'
+
 
 ENV['AWS_REGION'] ||= 'us-east-1'
 
@@ -20,35 +23,6 @@ module Aws
         })
 
         ::Aws::EC2::Client.new(region: ENV['AWS_REGION'])
-      end
-    end
-
-    class Event
-      include ::Aws::SiteMonitor::PstoreRecord
-
-      def initialize(occured_at: ::Time.now, status_code:, **attributes)
-        super(occured_at: occured_at, status_code: status_code, **attributes)
-      end
-    end
-
-    class Site
-      include ::Aws::SiteMonitor::PstoreRecord
-
-      def reboot_instances!
-        puts "RESTARTING SITE #{self.attributes}"
-        ::Aws::SiteMonitor.ec2_client.reboot_instances(
-          instance_ids: self[:instance_ids]
-        )
-      rescue ::Aws::EC2::Errors::IncorrectState => e
-        puts e.message
-        start_instances!
-      end
-
-      def start_instances!
-        puts "STARTING STOPPED INSTANCES"
-        ::Aws::SiteMonitor.ec2_client.start_instances(
-          instance_ids: self[:instance_ids]
-        )
       end
     end
   end
