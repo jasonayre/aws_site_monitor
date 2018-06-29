@@ -1,8 +1,10 @@
 module Aws
   module SiteMonitor
     class CLI < ::Thor
-      option :check_every_seconds, :type => :numeric, :default => 5, :desc => 'Check every x seconds'
+      option :check_every_seconds, :type => :numeric, :default => 60, :desc => 'Check every x seconds'
       option :aws_region, :type => :string, :default => 'us-east-1', :desc => 'AWS region'
+      option :killswitch_url, :type => :string, :desc => 'If a file no longer exists at this url, kill script'
+      option :request_timeout_seconds, :type => :numeric, :default => 15, :desc => 'How long to wait for response before request times out which will trigger a reboot'
 
       desc "start", "Start Watching"
       def start
@@ -10,7 +12,7 @@ module Aws
         start_monitoring!
         sleep
       rescue => e
-        puts e.inspect
+        puts "ERROR #{e.message}"
         start_monitoring!
       end
 
@@ -30,6 +32,24 @@ module Aws
         raise ::StandardError.new("SiteNotFound #{options.url}") if !site
         site.destroy
         puts "removed #{site[:url]} from watchlist"
+      end
+
+
+      desc "ls", "List sites being monitored"
+      def ls
+        sites = ::Aws::SiteMonitor::Site.all.map(&:attributes).join("\n")
+        puts sites.inspect
+      end
+
+      desc "list_events", "List events"
+      def list_events
+        events = ::Aws::SiteMonitor::Event.all.map(&:attributes).join("\n")
+        puts events.inspect
+      end
+
+      desc "clear_events", "Clear events"
+      def clear_events
+        ::Aws::SiteMonitor::Event.all.map(&:destroy)
       end
 
       no_tasks do
@@ -55,22 +75,36 @@ module Aws
             execution_interval: options.check_every_seconds,
             timeout_interval: options.check_every_seconds
           ) do
-            tasks = ::Aws::SiteMonitor::Site.all.map do |site|
-              puts "MAKING REQUEST TO #{site[:url]}"
-              result = `curl -s -o /dev/null -I -w "%{http_code}" #{site[:url]}`
-              puts result.inspect
+            check_killswitch if check_killswitch?
 
-              if result[0] === "2"
+            ::Aws::SiteMonitor::Site.all.each do |site|
+              puts "MAKING REQUEST TO #{site[:url]}"
+              result = `curl -s -o /dev/null -I -w "%{http_code}" --max-time #{options.request_timeout_seconds} #{site[:url]}`
+
+              if result[0] == "2"
                 puts "GOT 200 EVERYTHING OK"
-                nil
               else
                 ::Aws::SiteMonitor::Event.create(:status_code => result)
-                ::Aws::SiteMonitor::RestartTask.new(site)
+                site.reboot_instances!
               end
             end
-
-            tasks.flatten.compact.map(&:run)
           end
+        end
+
+        def check_killswitch
+          puts "CHECKING KILLSWITCH #{options.killswitch_url}"
+          result = `curl -s -o /dev/null -I -w "%{http_code}" -L #{options.killswitch_url}`
+          puts result
+          kill_process! if result[0] != "2"
+        end
+
+        def check_killswitch?
+          !!options.killswitch_url
+        end
+
+        #because we are in a new thread with the timer task, exit/abort wont work
+        def kill_process!
+          ::Process.kill 9, ::Process.pid
         end
 
         def start_monitoring!
