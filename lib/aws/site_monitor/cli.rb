@@ -11,6 +11,9 @@ module Aws
         configure!
         start_monitoring!
         sleep
+      rescue => e
+        puts "ERROR #{e.message}"
+        start_monitoring!
       end
 
       option :url, :type => :string, :desc => 'URL to watch', :required => true
@@ -56,20 +59,17 @@ module Aws
           ) do
             check_killswitch if check_killswitch?
 
-            tasks = ::Aws::SiteMonitor::Site.all.map do |site|
+            ::Aws::SiteMonitor::Site.all.each do |site|
               puts "MAKING REQUEST TO #{site[:url]}"
               result = `curl -s -o /dev/null -I -w "%{http_code}" --max-time #{options.request_timeout_seconds} #{site[:url]}`
 
               if result[0] == "2"
                 puts "GOT 200 EVERYTHING OK"
-                nil
               else
                 ::Aws::SiteMonitor::Event.create(:status_code => result)
-                ::Aws::SiteMonitor::RestartTask.new(site)
+                site.reboot_instances!
               end
             end
-
-            tasks.flatten.compact.map(&:run)
           end
         end
 

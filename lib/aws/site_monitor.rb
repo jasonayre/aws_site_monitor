@@ -19,7 +19,7 @@ module Aws
           credentials: ::Aws::Credentials.new(ENV['AWS_ACCESS_KEY_ID'], ENV['AWS_SECRET_ACCESS_KEY'])
         })
 
-        ::Aws::EC2::Client.new(region: AWS_REGION)
+        ::Aws::EC2::Client.new(region: ENV['AWS_REGION'])
       end
     end
 
@@ -33,29 +33,23 @@ module Aws
 
     class Site
       include ::Aws::SiteMonitor::PstoreRecord
-    end
 
-    class RestartTask
-      def initialize(site)
-        @site = site
+      def reboot_instances!
+        puts "RESTARTING SITE #{self.attributes}"
+        ::Aws::SiteMonitor.ec2_client.reboot_instances(
+          instance_ids: self[:instance_ids]
+        )
+      rescue ::Aws::EC2::Errors::IncorrectState => e
+        puts e.message
+        start_instances!
       end
 
-      def run
-        ::Aws::SiteMonitor.ec2_client.reboot_instances({
-          instance_ids: @site[:instance_ids]
-        })
+      def start_instances!
+        puts "STARTING STOPPED INSTANCES"
+        ::Aws::SiteMonitor.ec2_client.start_instances(
+          instance_ids: self[:instance_ids]
+        )
       end
-
-      # todo: maybe support hard shutdown / start
-      # def stop
-      #   begin
-      #     Aws::SiteMonitor.ec2_client.stop_instances
-      #     ec2.wait_until(:instance_stopped, instance_ids:[@id])
-      #     puts "instance stopped"
-      #   rescue Aws::Waiters::Errors::WaiterFailed => error
-      #     puts "failed waiting for instance running: #{error.message}"
-      #   end
-      # end
     end
   end
 end
