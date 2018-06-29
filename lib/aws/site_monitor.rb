@@ -23,14 +23,6 @@ module Aws
       end
     end
 
-    def self.register(url:, instance_ids:)
-      ::Aws::SiteMonitor::Site.create(url: url, instance_ids: instance_ids)
-    end
-
-    def self.unregister(url:)
-      ::Aws::SiteMonitor::Site.find_by(:url => url)
-    end
-
     class Event
       include ::Aws::SiteMonitor::PstoreRecord
 

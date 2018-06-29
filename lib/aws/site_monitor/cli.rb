@@ -1,17 +1,16 @@
 module Aws
   module SiteMonitor
     class CLI < ::Thor
-      option :check_every_seconds, :type => :numeric, :default => 5, :desc => 'Check every x seconds'
+      option :check_every_seconds, :type => :numeric, :default => 60, :desc => 'Check every x seconds'
       option :aws_region, :type => :string, :default => 'us-east-1', :desc => 'AWS region'
+      option :killswitch_url, :type => :string, :desc => 'If a file no longer exists at this url, kill script'
+      option :request_timeout_seconds, :type => :numeric, :default => 15, :desc => 'How long to wait for response before request times out which will trigger a reboot'
 
       desc "start", "Start Watching"
       def start
         configure!
         start_monitoring!
         sleep
-      rescue => e
-        puts e.inspect
-        start_monitoring!
       end
 
       option :url, :type => :string, :desc => 'URL to watch', :required => true
@@ -55,12 +54,13 @@ module Aws
             execution_interval: options.check_every_seconds,
             timeout_interval: options.check_every_seconds
           ) do
+            check_killswitch if check_killswitch?
+
             tasks = ::Aws::SiteMonitor::Site.all.map do |site|
               puts "MAKING REQUEST TO #{site[:url]}"
-              result = `curl -s -o /dev/null -I -w "%{http_code}" #{site[:url]}`
-              puts result.inspect
+              result = `curl -s -o /dev/null -I -w "%{http_code}" --max-time #{options.request_timeout_seconds} #{site[:url]}`
 
-              if result[0] === "2"
+              if result[0] == "2"
                 puts "GOT 200 EVERYTHING OK"
                 nil
               else
@@ -71,6 +71,22 @@ module Aws
 
             tasks.flatten.compact.map(&:run)
           end
+        end
+
+        def check_killswitch
+          puts "CHECKING KILLSWITCH #{options.killswitch_url}"
+          result = `curl -s -o /dev/null -I -w "%{http_code}" -L #{options.killswitch_url}`
+          puts result
+          kill_process! if result[0] != "2"
+        end
+
+        def check_killswitch?
+          !!options.killswitch_url
+        end
+
+        #because we are in a new thread with the timer task, exit/abort wont work
+        def kill_process!
+          ::Process.kill 9, ::Process.pid
         end
 
         def start_monitoring!
