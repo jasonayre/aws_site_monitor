@@ -5,6 +5,7 @@ module Aws
       option :aws_region, :type => :string, :default => 'us-east-1', :desc => 'AWS region'
       option :killswitch_url, :type => :string, :desc => 'If a file no longer exists at this url, kill script'
       option :request_timeout_seconds, :type => :numeric, :default => 15, :desc => 'How long to wait for response before request times out which will trigger a reboot'
+      option :attempts_until_hard_stop, :type => :numeric, :default => 0, :desc => 'How many reboot attempts before attempting hard stop, 0 = disabled'
 
       desc "start", "Start Watching"
       def start
@@ -83,9 +84,11 @@ module Aws
 
               if result[0] == "2"
                 puts "GOT 200 EVERYTHING OK"
+                site.reset_failure_count
               else
+                site.track_failure
                 ::Aws::SiteMonitor::Event.create(:status_code => result)
-                site.reboot_instances!
+                site.handle_failure!(options)
               end
             end
           end
